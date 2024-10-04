@@ -10,7 +10,7 @@ from model import estimate_hmm
 import random
 import math
 
-from typing import List, Dict, Tuple, Union
+from typing import List, Dict, Tuple
 
 
 def viterbi(
