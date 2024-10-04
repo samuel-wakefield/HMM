@@ -10,7 +10,7 @@ from model import estimate_hmm
 import random
 import math
 
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Union
 
 
 def viterbi(
@@ -82,6 +82,88 @@ def viterbi(
     return seq[:-1]
 
 
+def cross_validation_sequence_labeling(
+    data: List[Dict[str, List[str]]],
+) -> Dict[str, float]:
+    """
+    Runs 10-fold cross-validation for evaluating the HMM's prediction with Viterbi decoding. Calculates precision, recall, and F1 for each fold and returns the average over the folds.
+
+    @param data: the sequence data encoded as a list of dictionaries with each consisting of the fields 'observed', and 'hidden'
+    @return: a dictionary with keys 'recall', 'precision', and 'f1' and its associated averaged score.
+    """
+    num_folds = 10
+    folds = generate_random_cross_folds(data, num_folds)
+    precisions = []
+    recalls = []
+    f1s = []
+
+    # Iterate through each fold as the test fold
+    for test_fold_index, test_fold in enumerate(folds):
+        observed_sequences = [sequence["observed"] for sequence in test_fold]
+        hidden_sequences = [sequence["hidden"] for sequence in test_fold]
+
+        # Construct training data
+        train = []
+        for index, fold in enumerate(folds):
+            if test_fold_index != index:
+                train.extend(fold)
+
+        predictions = []
+        transition_probs, emission_probs = estimate_hmm(train)
+
+        for sample in observed_sequences:
+            prediction = viterbi(sample, transition_probs, emission_probs)
+            predictions.append(prediction)
+
+        predictions_binarized = [
+            [1 if state == "W" else 0 for state in pred] for pred in predictions
+        ]
+        dev_hidden_sequences_binarized = [
+            [1 if state == "W" else 0 for state in dev] for dev in hidden_sequences
+        ]
+
+        p = precision_score(predictions_binarized, dev_hidden_sequences_binarized)
+        r = recall_score(predictions_binarized, dev_hidden_sequences_binarized)
+        f1 = f1_score(predictions_binarized, dev_hidden_sequences_binarized)
+
+        precisions.append(p)
+        recalls.append(r)
+        f1s.append(f1)
+
+    avg_precision = sum(precisions) / len(precisions)
+    avg_recall = sum(recalls) / len(recalls)
+    avg_f1 = sum(f1s) / len(f1s)
+
+    return {"precision": avg_precision, "recall": avg_recall, "f1": avg_f1}
+
+
+def generate_random_cross_folds(
+    training_data: List[Dict[str, List[str]]], n: int
+) -> List[List[Dict[str, List[str]]]]:
+    """
+    Split training data into n folds, random.
+
+    @param training_data: list of training instances, where each instance is a list of dictionaries with each consisting of the fields 'observed', and 'hidden'
+    @param n: the number of cross-folds
+    @return: a list of n folds, where each fold is a list of training instances
+    """
+    shuffledIndexes = list(range(len(training_data)))
+    random.shuffle(shuffledIndexes)
+
+    folds = []
+    fold_len = len(training_data) // n
+
+    for fold_index in range(n):
+        fold = []
+
+        for fold_item in range(fold_index * fold_len, (fold_index + 1) * fold_len):
+            fold.append(training_data[shuffledIndexes[fold_item]])
+
+        folds.append(fold)
+
+    return folds
+
+
 def main():
     dice_data = load_dice_data(os.path.join("data", "dice_dataset"))
 
@@ -123,6 +205,14 @@ def main():
     print(f"Precision for seed {seed} using the HMM: {p}")
     print(f"Recall for seed {seed} using the HMM: {r}")
     print(f"F1 for seed {seed} using the HMM: {f1}\n")
+
+    print("Evaluating HMM using cross-validation with 10 folds.\n")
+
+    cv_scores = cross_validation_sequence_labeling(dice_data)
+
+    print(f" Your cv average precision using the HMM: {cv_scores['precision']}")
+    print(f" Your cv average recall using the HMM: {cv_scores['recall']}")
+    print(f" Your cv average F1 using the HMM: {cv_scores['f1']}")
 
 
 if __name__ == "__main__":
