@@ -5,6 +5,14 @@ This project implements the Viterbi algorithm using a Hidden Markov Model (HMM) 
 The algorithm takes as input a sequence of integers representing the numbers rolled from a die, with possible values ranging from 1 to 6. In this context, the hidden states correspond to the type of dice being used, where F represents a fair die and W represents a weighted die. The output of the algorithm is the most likely sequence of hidden states (F and W) that corresponds to the observed sequence of dice rolls. 
 
 This model is applicable in scenarios where the system being modeled follows a Markov process with hidden (unobserved) states, making it useful in various applications such as gaming simulations, speech recognition, part-of-speech tagging, and bioinformatics.
+
+## Key terms
+- **Hidden states**: The unknown states that we want to predict.
+- **Observed states**: The known data used to infer the hidden states.
+- **Transition probabilities**: The probability of moving from one hidden state to another.
+- **Emission probabilities**: The probability of observing a particular observation given a hidden state.
+- **Sigma**: A dynamic programming table used in the Viterbi algorithm to store the maximum log probabilities of reaching each hidden state at each step in the observed sequence.
+- **Psi**: A table used to keep track of the most likely previous hidden state at each time step, allowing the algorithm to backtrack and recover the most likely sequence of hidden states.
 ## How the algorithm works
 The algorithm finds the most likely sequence of hidden states by iteratively calculating probabilities based on transition and emission probabilities. It operates as follows:
 
@@ -25,12 +33,6 @@ After constructing the sigma table, the algorithm traces back from the most like
 
 The final sequence is obtained by backtracking through the psi table from the end state to the start state. The hidden states in this sequence represent the most likely path that the HMM followed to generate the observed sequence.
 The algorithm uses log probabilities to avoid numerical underflow issues that arise from multiplying many small probabilities together. The try_log helper function ensures the algorithm works with logarithmic values, returning None if any of the input values are invalid (i.e., zero or None)
-
-### Key terms
-- Hidden states: The unknown states that we want to predict.
-- Observed states: The known data used to infer the hidden states.
-- Transition probabilities: The probability of moving from one hidden state to another.
-- Emission probabilities: The probability of observing a particular observation given a hidden state.
 
 ## Evaluation of the model
 To assess the performance of the HMM and Viterbi algorithm, I used the following metrics:
